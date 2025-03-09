@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
-const { db, createMultipleCards, getAllPaymentCards, getTodayReport, getLostCards } = require("./src/database/database.cjs"); 
+const { db, createMultipleCards, getAllPaymentCards, getTodayReport, getLostCards, topUpCard } = require("./src/database/database.cjs"); 
 
 let mainWindow;
 
@@ -115,37 +115,33 @@ ipcMain.handle("update-card-type", async (event, { barcode, type }) => {
 // Top up card
 ipcMain.handle("top-up-card", async (event, { barcode, amount }) => {
   try {
-    const today = new Date().toISOString().split("T")[0];
-
-    // Get the existing card data
-    const card = db.prepare("SELECT * FROM payment_cards WHERE barcode = ?").get(barcode);
-    if (!card) {
-      return { error: "Card not found" };
+    // **Step 1: Validate Input**
+    if (!barcode || isNaN(amount) || amount <= 0) {
+      console.error(" Invalid top-up request.");
+      return { error: "Invalid barcode or amount." };
     }
 
-    // Calculate new balance
-    const newBalance = card.credit + amount;
+    console.log(`Processing top-up: Barcode: ${barcode}, Amount: ${amount}`);
 
-    // Update the payment_cards table (activate the card if it was inactive)
-    db.prepare(`
-      UPDATE payment_cards 
-      SET credit = ?, status = CASE WHEN status = 'Inactive' THEN 'Active' ELSE status END 
-      WHERE barcode = ?
-    `).run(newBalance, barcode);
+    // 🛠 **Step 2: Call `topUpCard` function**
+    const result = topUpCard(barcode, parseFloat(amount));
 
-    // Insert top-up history
-    db.prepare(`
-      INSERT INTO top_up_history (cardID, top_up_amount, old_balance, new_balance, date)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(card.id, amount, card.credit, newBalance, today);
+    if (result.error) {
+      console.error("Top-up failed:", result.error);
+      return { error: result.error };
+    }
 
-    // Update the report after top-up
-    updateReport();
+    console.log("Top-up successful:", result);
 
-    return { success: true, newBalance };
+    return {
+      success: true,
+      newBalance: result.newBalance,
+      newStatus: result.newStatus,
+    };
+
   } catch (error) {
-    console.error("Error topping up card:", error);
-    return { error: "Failed to top up card" };
+    console.error("Error in `top-up-card`:", error.message);
+    return { error: "Failed to top up card." };
   }
 });
 
@@ -212,12 +208,12 @@ ipcMain.handle("get-inactive-cards", async () => {
 ipcMain.handle("get-inactive-cards-grouped", async () => {
   try {
     const groupedCards = db.prepare(`
-      SELECT creation_date, barcode FROM payment_cards 
+      SELECT DATE(creation_date) AS creation_date, barcode FROM payment_cards 
       WHERE status = 'Inactive' 
       ORDER BY creation_date DESC
     `).all();
 
-    // Group barcodes by `creation_date`
+    // Group barcodes by `creation_date` (grouping by DATE only)
     const groupedByDate = groupedCards.reduce((acc, card) => {
       if (!acc[card.creation_date]) acc[card.creation_date] = [];
       acc[card.creation_date].push(card.barcode);
@@ -230,6 +226,7 @@ ipcMain.handle("get-inactive-cards-grouped", async () => {
     return {};
   }
 });
+
 
 
 

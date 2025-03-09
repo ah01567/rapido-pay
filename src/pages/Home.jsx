@@ -174,7 +174,7 @@ const Home = () => {
           </div>
 
           <div onClick={fetchLostCards} className="cursor-pointer bg-white p-4 rounded-l shadow-md w-48 text-center border border-gray-300">
-            <p className="text-2xl font-semibold" style={{fontSize: '30px'}}>{report.total_lost}</p>
+            <p className="text-2xl font-semibold" style={{fontSize: '30px'}}>{report.total_lost_cards}</p>
             <h3 className="text-lg text-gray-700 mt-4" style={{fontSize: '20px'}}> البطاقات المفقودة</h3>
           </div>
 

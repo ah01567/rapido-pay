@@ -139,7 +139,7 @@ function topUpCard(barcode, amount) {
         db.prepare(`
           INSERT INTO report (date, total_cards, total_active_cards, total_inactive_cards, total_lost_cards, total_transactions, total_income)
           VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(today, 0, wasInactive ? 1 : 0, wasInactive ? 0 : 1, 0, 1, amount);
+        `).run(today, 0, wasInactive ? 1 : 0, 0, 0, 1, amount);
 
         console.log("✅ New report created for today.");
       } else {

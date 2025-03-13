@@ -348,6 +348,134 @@ ipcMain.handle("delete-card-type", async (event, cardId) => {
 });
 
 
+
+
+
+ipcMain.handle("get-total-analytics", async () => {
+  try {
+    // Get total income (sum of positive amounts)
+    const totalIncome = db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) AS income 
+      FROM transactions_history 
+      WHERE amount > 0
+    `).get().income;
+
+    // Get total purchases (sum of negative amounts)
+    const totalPurchases = db.prepare(`
+      SELECT COALESCE(ABS(SUM(amount)), 0) AS purchases 
+      FROM transactions_history 
+      WHERE amount < 0
+    `).get().purchases;
+
+    // Get the total number of transactions
+    const totalTransactions = db.prepare(`
+      SELECT COUNT(*) AS count FROM transactions_history
+    `).get().count;
+
+    // Get the number of unique transaction days
+    const uniqueDays = db.prepare(`
+      SELECT COUNT(DISTINCT DATE(date)) AS unique_days FROM transactions_history
+    `).get().unique_days;
+
+    // Get total sum of positive transactions
+    const totalTopUpAmount = db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) AS topup_total 
+      FROM transactions_history 
+      WHERE amount > 0
+    `).get().topup_total;
+
+    // Get total number of top-up transactions
+    const topUpCount = db.prepare(`
+      SELECT COUNT(*) AS topup_count 
+      FROM transactions_history 
+      WHERE amount > 0
+    `).get().topup_count;
+
+    // Calculate averages
+    const avgTopUpAmount = topUpCount > 0 ? Math.round(totalTopUpAmount / topUpCount) : 0;
+    const avgDailyTransactions = uniqueDays > 0 ? Math.round(totalTransactions / uniqueDays) : 0;
+
+    return {
+      totalIncome,
+      totalPurchases,
+      avgTopUpAmount,
+      avgDailyTransactions,
+    };
+  } catch (error) {
+    console.error("Error fetching analytics:", error);
+    return { error: "Failed to fetch analytics." };
+  }
+});
+
+
+// Fetch the distribution of the Card Types:
+ipcMain.handle("get-card-type-distribution", async () => {
+  try {
+    const cardTypeCounts = db.prepare(`
+      SELECT type, COUNT(*) AS count
+      FROM payment_cards
+      WHERE type > 0
+      GROUP BY type
+    `).all();
+
+    // Fetch card type labels from `card_types` table
+    const cardTypes = db.prepare(`
+      SELECT id, cardPrice 
+      FROM card_types
+    `).all();
+
+    // Map the IDs to their actual price names
+    const formattedData = cardTypeCounts.map((entry) => {
+      const cardType = cardTypes.find((type) => type.id === entry.type);
+      return {
+        name: cardType ? `Card ${cardType.cardPrice} DA` : "Unknown",
+        value: entry.count,
+      };
+    });
+
+    return formattedData;
+  } catch (error) {
+    console.error("Error fetching card type distribution:", error);
+    return { error: "Failed to fetch card type distribution." };
+  }
+});
+
+
+
+
+// Get Daily Income for a week:
+const weekDays = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+ipcMain.handle("get-daily-income", async () => {
+  try {
+    const dailyIncome = db.prepare(`
+      SELECT 
+        strftime('%w', date) AS weekday, 
+        SUM(amount) AS total_income 
+      FROM transactions_history 
+      WHERE amount > 0 
+        AND date >= date('now', 'weekday 0', '-6 days') -- Get transactions from current week
+      GROUP BY weekday
+    `).all();
+
+    // Convert database weekday (0-6) to labeled days (Sunday-Saturday)
+    const formattedData = weekDays.map((day, index) => {
+      const dayData = dailyIncome.find(d => parseInt(d.weekday) === index);
+      return {
+        day: day,
+        income: dayData ? dayData.total_income : 0,
+      };
+    });
+
+    return formattedData;
+  } catch (error) {
+    console.error("Error fetching daily income:", error);
+    return { error: "Failed to fetch daily income." };
+  }
+});
+
+
+
 // Function to create the main window
 function createMainWindow() {
   mainWindow = new BrowserWindow({

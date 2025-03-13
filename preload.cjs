@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld("api", {
   transferMoneyToNewCard: (oldBarcode, newBarcode) => ipcRenderer.invoke("transfer-money-to-new-card", oldBarcode, newBarcode),
 
   getTodayReport: () => ipcRenderer.invoke("get-today-report"),
+  getTotalAnalytics: () => ipcRenderer.invoke("get-total-analytics"),
+  getCardTypeDistribution: () => ipcRenderer.invoke("get-card-type-distribution"),
+  getDailyIncome: () => ipcRenderer.invoke("get-daily-income"),
 
   getPaymentCards: () => ipcRenderer.invoke("get-payment-cards"),
   getInactiveCards: () => ipcRenderer.invoke("get-inactive-cards"),

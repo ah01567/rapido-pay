@@ -38,44 +38,6 @@ app.on("window-all-closed", () => {
 
 
 
-// *****************************.   FUNCTIONS.    ***************************
-
-function updateReport() {
-  const today = new Date().toISOString().split("T")[0];
-
-  // Get the actual number of each card status from the database
-  const totalActive = db.prepare("SELECT COUNT(*) AS count FROM payment_cards WHERE status = 'Active'").get().count;
-  const totalInactive = db.prepare("SELECT COUNT(*) AS count FROM payment_cards WHERE status = 'Inactive'").get().count;
-  const totalBlocked = db.prepare("SELECT COUNT(*) AS count FROM payment_cards WHERE status = 'Blocked'").get().count;
-
-  // Calculate the total number of cards
-  const totalCards = totalActive + totalInactive + totalBlocked;
-
-  // Get the total paid amount from top-up history
-  const totalPaidAmount = db.prepare("SELECT COALESCE(SUM(top_up_amount), 0) AS total FROM top_up_history").get().total;
-
-  // Check if today's report exists
-  const existingReport = db.prepare("SELECT * FROM report WHERE date = ?").get(today);
-
-  if (existingReport) {
-    // Update existing report
-    db.prepare(`
-      UPDATE report 
-      SET total_cards = ?, total_active_cards = ?, total_inactive_cards = ?, total_lost = ?, total_paid_amount = ?
-      WHERE date = ?
-    `).run(totalCards, totalActive, totalInactive, totalBlocked, totalPaidAmount, today);
-  } else {
-    // Create a new report entry if none exists
-    db.prepare(`
-      INSERT INTO report (date, total_cards, total_active_cards, total_inactive_cards, total_lost, total_paid_amount)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(today, totalCards, totalActive, totalInactive, totalBlocked, totalPaidAmount);
-  }
-}
-
-
-
-
 
 // *****************************.   MAIN HANDLES.    ***************************
 
@@ -113,25 +75,25 @@ ipcMain.handle("update-card-type", async (event, { barcode, type }) => {
 
 
 // Top up card
-ipcMain.handle("top-up-card", async (event, { barcode, amount }) => {
+ipcMain.handle("top-up-card", async (event, { barcode, amount, isTopUp, selectedCardTypeId = null, bonus = 0 }) => {
   try {
     // **Step 1: Validate Input**
     if (!barcode || isNaN(amount) || amount <= 0) {
-      console.error(" Invalid top-up request.");
+      console.error("Invalid transaction request.");
       return { error: "Invalid barcode or amount." };
     }
 
-    console.log(`Processing top-up: Barcode: ${barcode}, Amount: ${amount}`);
+    console.log(`Processing transaction: Barcode: ${barcode}, Amount: ${amount}, Bonus: ${bonus}, Type: ${isTopUp ? "Top-Up" : "Purchase"}`);
 
-    // 🛠 **Step 2: Call `topUpCard` function**
-    const result = topUpCard(barcode, parseFloat(amount));
+    // **Step 2: Call `topUpCard` function WITH bonus and selectedCardTypeId**
+    const result = topUpCard(barcode, parseFloat(amount), isTopUp, selectedCardTypeId, parseFloat(bonus));
 
     if (result.error) {
-      console.error("Top-up failed:", result.error);
+      console.error("Transaction failed:", result.error);
       return { error: result.error };
     }
 
-    console.log("Top-up successful:", result);
+    console.log("Transaction successful:", result);
 
     return {
       success: true,
@@ -141,7 +103,21 @@ ipcMain.handle("top-up-card", async (event, { barcode, amount }) => {
 
   } catch (error) {
     console.error("Error in `top-up-card`:", error.message);
-    return { error: "Failed to top up card." };
+    return { error: "Failed to process transaction." };
+  }
+});
+
+
+
+
+// Fetch from transaction history
+ipcMain.handle("get-transactions-history", async (event, barcode) => {
+  try {
+    const stmt = db.prepare("SELECT * FROM transactions_history WHERE barcode = ? ORDER BY date DESC");
+    return stmt.all(barcode);
+  } catch (error) {
+    console.error("Error fetching transaction history:", error);
+    return { error: "Failed to fetch transaction history." };
   }
 });
 
@@ -152,9 +128,6 @@ ipcMain.handle("block-card", async (event, barcode) => {
   try {
     const stmt = db.prepare("UPDATE payment_cards SET status = 'Blocked' WHERE barcode = ?");
     stmt.run(barcode);
-
-    // Update report after blocking the card
-    updateReport();
 
     return { success: true };
   } catch (error) {

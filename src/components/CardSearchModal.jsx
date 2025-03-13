@@ -5,11 +5,13 @@ const CardSearchModal = ({ isOpen, onClose, card }) => {
   if (!isOpen || !card) return null;
 
   const [cardTypes, setCardTypes] = useState([]);
-  const [selectedCardType, setSelectedCardType] = useState(card?.type || "");
+  const [selectedCardType, setSelectedCardType] = useState("0");
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [transactionType, setTransactionType] = useState(""); 
   const [transactionAmount, setTransactionAmount] = useState("");
-  
+  const [showTypeConfirmation, setShowTypeConfirmation] = useState(false);
+  const [selectedTypeToConfirm, setSelectedTypeToConfirm] = useState(null);
+  const [selectedTypeCredit, setSelectedTypeCredit] = useState(null);
 
 
 
@@ -25,56 +27,110 @@ const CardSearchModal = ({ isOpen, onClose, card }) => {
 
 
 
-  // Change the type of the card
-  const handleCardTypeChange = (newType) => {
-    setSelectedCardType(newType);
-    if (window.api) {
-      window.api.updateCardType(card.barcode, newType)
-        .then(() => console.log("Card type updated successfully!"))
-        .catch((error) => console.error("Error updating card type:", error));
-    }
-  };
-
+// Function to Handle Type Selection
+const handleCardTypeChange = (newType) => {
+  const selectedType = cardTypes.find((type) => type.id == newType);
   
-
-  // Handle 'Top up' OR 'Buy' based on the clicked button:
-  const handleTransaction = (type) => {
-    setTransactionType(type);
-    setTransactionAmount(""); 
-    setShowTransactionModal(true); 
+  if (selectedType) {
+    setSelectedTypeToConfirm(newType); // Store Type ID
+    setSelectedTypeCredit(selectedType.cardCredit); // Store Credit Amount
+    setShowTypeConfirmation(true); // Open Confirmation Modal
   }
+};
 
+// Function to Confirm and Apply the Selected Card Type
+const confirmCardTypeSelection = () => {
+  if (!selectedTypeToConfirm || !selectedTypeCredit) return;
 
-  // Process 'Top up' OR 'Buy' based on the clicked button:
-  const processTransaction = () => {
-    if (!transactionAmount || isNaN(transactionAmount) || transactionAmount <= 0) {
-      alert("يرجى إدخال مبلغ صالح.");
-      return;
-    }
-  
-    if (transactionType === "topUp") {
-      handleTopUp(transactionAmount);
-    } else if (transactionType === "purchase") {
-      handlePurchase(transactionAmount);
-    }
-  
-    setShowTransactionModal(false); // Close modal after submission
-  };
-  
-  
-  // Top up function
-  const handleTopUp = (amount) => {
-    window.api.topUpCard({ barcode: card.barcode, amount: parseFloat(amount) })
+  const selectedType = cardTypes.find((type) => type.id == selectedTypeToConfirm);
+  if (!selectedType) return;
+
+  const actualAmount = selectedType.cardPrice; // Use cardPrice, not cardCredit
+  const bonus = selectedType.cardCredit - selectedType.cardPrice; // Calculate the correct bonus
+
+  window.api.updateCardType(card.barcode, selectedTypeToConfirm)
+    .then(() => {
+      console.log("✅ Card type updated successfully!");
+
+      window.api.topUpCard({
+        barcode: card.barcode,
+        amount: actualAmount,  // Now sending the correct `amount`
+        isTopUp: true,
+        selectedCardTypeId: selectedTypeToConfirm, 
+        bonus: bonus // Send the correct bonus
+      })
       .then((response) => {
         if (response.error) {
-          alert("Error topping up: " + response.error);
+          alert("خطأ في الشحن: " + response.error);
         } else {
-          alert("تم الشحن بنجاح ! الرصيد الحالي هو " + response.newBalance);
-          onClose(); 
+          alert(`✅ تم تحديث نوع البطاقة وشحنها بنجاح! الرصيد الحالي: ${response.newBalance} DA`);
+          setSelectedCardType(selectedTypeToConfirm); // Update UI
         }
       })
-      .catch((error) => console.error("Error:", error));
-  };
+      .catch((error) => console.error("❌ Error in top-up:", error));
+    })
+    .catch((error) => console.error("❌ Error updating card type:", error));
+
+  setShowTypeConfirmation(false);
+};
+
+
+  
+
+
+
+
+// Handle 'Top up' OR 'Buy' based on the clicked button:
+const handleTransaction = (type) => {
+  setTransactionType(type);
+  setTransactionAmount(""); 
+  setShowTransactionModal(true); 
+};
+
+// Process 'Top up' OR 'Buy' based on the clicked button:
+const processTransaction = () => {
+  if (!transactionAmount || isNaN(transactionAmount) || transactionAmount <= 0) {
+    alert("يرجى إدخال مبلغ صالح.");
+    return;
+  }
+
+  const isTopUp = transactionType === "topUp";
+  let selectedCardTypeId = isTopUp && selectedCardType !== "0" ? selectedCardType : null;
+  let finalAmount = parseFloat(transactionAmount);
+  let bonus = 0; // Default bonus is 0
+
+  // If a card type is selected, get its bonus
+  if (selectedCardTypeId) {
+    const selectedType = cardTypes.find(ct => ct.id == selectedCardTypeId);
+    if (selectedType) {
+      finalAmount = selectedType.cardPrice; // Save `cardPrice` as the amount
+      bonus = selectedType.cardCredit - selectedType.cardPrice; // Save bonus separately
+    }
+  }
+
+  window.api.topUpCard({ 
+    barcode: card.barcode, 
+    amount: finalAmount,  
+    isTopUp,
+    selectedCardTypeId,
+    bonus
+  })
+  .then((response) => {
+    if (response.error) {
+      alert(response.error);
+    } else {
+      alert(`✅ ${isTopUp ? "تم الشحن بنجاح!" : "تم الشراء بنجاح!"} الرصيد الحالي: ${response.newBalance} DA`);
+      onClose(); 
+    }
+  })
+  .catch((error) => console.error("Error:", error));
+
+  setShowTransactionModal(false); 
+};
+
+
+
+
   
 
 
@@ -145,11 +201,11 @@ const CardSearchModal = ({ isOpen, onClose, card }) => {
                   <strong className="mr-2">Card:</strong>
                   <select
                     className="border border-gray-300 px-3 py-1 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={selectedCardType}
+                    value={selectedCardType} 
                     onChange={(e) => handleCardTypeChange(e.target.value)}
                   >
                     {/* Default option for "لا توجد" if TYPE is 0 */}
-                    <option value="0" selected={card.type === 0}>
+                    <option value="0">
                       لا توجد
                     </option>
 
@@ -222,40 +278,70 @@ const CardSearchModal = ({ isOpen, onClose, card }) => {
         </div>
 
 
-{/* Transaction Amount Modal */}
-{showTransactionModal && (
-  <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 mr-64 z-50">
-    <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center w-96">
-      <h2 className="text-xl font-bold mb-4">
-        {transactionType === "topUp" ? "إدخال مبلغ الشحن" : "إدخال مبلغ الشراء"}
-      </h2>
-      
-      <input
-        type="number"
-        min="1"
-        placeholder="أدخل المبلغ"
-        className="border border-gray-300 px-3 py-2 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-        value={transactionAmount}
-        onChange={(e) => setTransactionAmount(e.target.value)}
-      />
-      
-      <div className="flex gap-4 mt-4">
-        <button
-          className="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-500 shadow-md"
-          onClick={processTransaction}
-        >
-          تأكيد
-        </button>
-        <button
-          className="bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 shadow-md"
-          onClick={() => setShowTransactionModal(false)}
-        >
-          إلغاء
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      {/* Transaction Amount Modal */}
+      {showTransactionModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 mr-64 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center w-96">
+            <h2 className="text-xl font-bold mb-4">
+              {transactionType === "topUp" ? "إدخال مبلغ الشحن" : "إدخال مبلغ الشراء"}
+            </h2>
+            
+            <input
+              type="number"
+              min="1"
+              placeholder="أدخل المبلغ"
+              className="border border-gray-300 px-3 py-2 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              value={transactionAmount}
+              onChange={(e) => setTransactionAmount(e.target.value)}
+            />
+            
+            <div className="flex gap-4 mt-4">
+              <button
+                className="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-500 shadow-md"
+                onClick={processTransaction}
+              >
+                تأكيد
+              </button>
+              <button
+                className="bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 shadow-md"
+                onClick={() => setShowTransactionModal(false)}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
+
+      {/* Confirmation Modal for Card Type Change */}
+      {showTypeConfirmation && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 mr-64 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg text-center w-96">
+            <h2 className="text-xl font-bold mb-4">تأكيد تغيير نوع البطاقة</h2>
+            <p className="mb-4">هل أنت متأكد أنك تريد تحديد هذا النوع؟ سيتم شحن الرصيد الجديد تلقائيًا.</p>
+
+            <div className="flex gap-4 justify-center">
+              <button
+                className="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-500 shadow-md"
+                onClick={confirmCardTypeSelection}
+              >
+                تأكيد
+              </button>
+              <button
+                className="bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 shadow-md"
+                onClick={() => setShowTypeConfirmation(false)}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
 
 
 

@@ -168,7 +168,7 @@ const Home = () => {
         {/* Ticket Section */}
         <div className="w-full flex justify-center gap-6 mt-8">
 
-        <div onClick={fetchAllCards} className="cursor-pointer bg-white p-4 rounded-l shadow-md w-48 text-center border border-gray-300">
+          <div onClick={fetchAllCards} className="cursor-pointer bg-white p-4 rounded-l shadow-md w-48 text-center border border-gray-300">
             <p className="text-2xl font-semibold text-green-700" style={{fontSize: '30px'}}>{report.total_cards}</p>
             <h3 className="text-lg font-bold  text-gray-700 mt-4" style={{fontSize: '20px'}}>إجمالي البطاقات</h3>
           </div>

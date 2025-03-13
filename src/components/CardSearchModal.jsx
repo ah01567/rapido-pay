@@ -12,6 +12,9 @@ const CardSearchModal = ({ isOpen, onClose, card }) => {
   const [showTypeConfirmation, setShowTypeConfirmation] = useState(false);
   const [selectedTypeToConfirm, setSelectedTypeToConfirm] = useState(null);
   const [selectedTypeCredit, setSelectedTypeCredit] = useState(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [newCardBarcode, setNewCardBarcode] = useState("");
+
 
 
 
@@ -37,6 +40,8 @@ const handleCardTypeChange = (newType) => {
     setShowTypeConfirmation(true); // Open Confirmation Modal
   }
 };
+
+
 
 // Function to Confirm and Apply the Selected Card Type
 const confirmCardTypeSelection = () => {
@@ -76,8 +81,6 @@ const confirmCardTypeSelection = () => {
 
 
   
-
-
 
 
 // Handle 'Top up' OR 'Buy' based on the clicked button:
@@ -135,13 +138,14 @@ const processTransaction = () => {
 
 
 
-  // Buy function
-  const handlePurchase = (amount) => {
-    alert("Purchase successful!");
-  };
   
   // Block Card function
   const handleBlockCard = () => {
+    if (card.status !== "Active") {
+      alert("لا يمكن حظر هذه البطاقة لأنها ليست مفعلة.");
+      return;
+    }
+  
     if (!window.confirm("هل أنت متأكد أنك تريد حظر هذه البطاقة؟")) return;
   
     window.api.blockCard(card.barcode)
@@ -149,14 +153,38 @@ const processTransaction = () => {
         if (response.error) {
           alert("خطأ: " + response.error);
         } else {
-          alert("تم حظر البطاقة بنجاح!");
-          onClose();
+          alert("✅ تم حظر البطاقة بنجاح!");
+          onClose(); // Close modal after blocking
         }
       })
-      .catch((error) => console.error("Error blocking card:", error));
+      .catch((error) => console.error("❌ Error blocking card:", error));
+  };  
+
+  
+
+  // Transfer the Money from a BLOCKED CARD to a NEW CARD:
+  const handleTransferMoney = () => {
+    if (!newCardBarcode) {
+      alert("الرجاء إدخال الباركود الخاص بالبطاقة الجديدة.");
+      return;
+    }
+  
+    if (!window.confirm("هل أنت متأكد أنك تريد نقل الأموال إلى البطاقة الجديدة؟")) return;
+  
+    window.api.transferMoneyToNewCard(card.barcode, newCardBarcode)
+      .then((response) => {
+        if (response.error) {
+          alert("❌ خطأ: " + response.error);
+        } else {
+          alert("✅ تم تحويل الرصيد بنجاح!");
+          onClose(); // Close modal after success
+        }
+      })
+      .catch((error) => console.error("❌ Error transferring money:", error));
   };
 
   
+
 
   if (!isOpen || !card) return null;
   return (
@@ -239,7 +267,7 @@ const processTransaction = () => {
               // If the card is BLOCKED, show ONLY the "Transfer Money" button
               <button
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-500 shadow-md"
-                // onClick={handleTransferToNewCard} // Define this function if needed
+                onClick={() => setShowTransferModal(true)}
               >
                 🔄 تحويل الأموال إلى بطاقة جديدة
               </button>
@@ -263,8 +291,8 @@ const processTransaction = () => {
           </div>
 
 
-            {/* Orders & Spending Section */}
-            <div className="mt-10 flex justify-between w-full text-gray-700 border-t pt-4">
+        {/* Orders & Spending Section */}
+        <div className="mt-10 flex justify-between w-full text-gray-700 border-t pt-4">
               <div className="w-1/2 text-center">
                 <p className="text-xl font-semibold">0</p>
                 <p className="text-sm text-gray-500">إجمالي الطلبات</p>
@@ -348,13 +376,49 @@ const processTransaction = () => {
         {/* Block 'Active Card' Button */}
         {card.status === "Active" && (
           <button
-          className="mt-6 w-full flex items-center justify-center gap-2 bg-white text-red-600 border border-red-600 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 shadow-md"
-          style={{width:'40%', variant:'outlined' }}
-          onClick={handleBlockCard}
+            className="mt-6 w-full flex items-center justify-center gap-2 bg-white text-red-600 border border-red-600 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 shadow-md"
+            style={{ width: '40%', variant: 'outlined' }}
+            onClick={handleBlockCard}
           >
             حظر البطاقة
           </button>
         )}
+
+
+
+        {/* Transfer Money Modal */}
+        {showTransferModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 mr-64 z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center w-96">
+              <h2 className="text-xl font-bold mb-4">إدخال الباركود الخاص بالبطاقة الجديدة</h2>
+              
+              <input
+                type="text"
+                placeholder="أدخل الباركود الجديد"
+                className="border border-gray-300 px-3 py-2 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                value={newCardBarcode}
+                onChange={(e) => setNewCardBarcode(e.target.value)}
+              />
+              
+              <div className="flex gap-4 mt-4">
+                <button
+                  className="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-500 shadow-md"
+                  onClick={handleTransferMoney}
+                >
+                  تأكيد
+                </button>
+                <button
+                  className="bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 shadow-md"
+                  onClick={() => setShowTransferModal(false)}
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+
 
 
 

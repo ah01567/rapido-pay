@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("api", {
   updateCardType: (barcode, type) => ipcRenderer.invoke("update-card-type", { barcode, type }),
   topUpCard: (data) => ipcRenderer.invoke("top-up-card", data),
   blockCard: (barcode) => ipcRenderer.invoke("block-card", barcode),
+  transferMoneyToNewCard: (oldBarcode, newBarcode) => ipcRenderer.invoke("transfer-money-to-new-card", oldBarcode, newBarcode),
 
   getTodayReport: () => ipcRenderer.invoke("get-today-report"),
 

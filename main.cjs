@@ -126,15 +126,69 @@ ipcMain.handle("get-transactions-history", async (event, barcode) => {
 // handle Block an Active card:
 ipcMain.handle("block-card", async (event, barcode) => {
   try {
-    const stmt = db.prepare("UPDATE payment_cards SET status = 'Blocked' WHERE barcode = ?");
-    stmt.run(barcode);
+    // Fetch the current card details
+    const card = db.prepare("SELECT status FROM payment_cards WHERE barcode = ?").get(barcode);
 
+    if (!card) {
+      return { error: "Card not found." };
+    }
+
+    if (card.status !== "Active") {
+      return { error: "Only active cards can be blocked." };
+    }
+
+    // Update card status, reset type, and refresh update_date
+    db.prepare(`
+      UPDATE payment_cards 
+      SET status = 'Blocked', 
+          update_date = datetime('now'), 
+          type = 0 
+      WHERE barcode = ?
+    `).run(barcode);
+
+    console.log(`✅ Card ${barcode} has been blocked.`);
     return { success: true };
+
   } catch (error) {
-    console.error("Error blocking card:", error);
-    return { error: "Failed to block card" };
+    console.error("❌ Error blocking card:", error.message);
+    return { error: "Failed to block card." };
   }
 });
+
+
+
+
+// Handle transfer the money from a blocked card to a new card
+ipcMain.handle("transfer-money-to-new-card", async (event, oldBarcode, newBarcode) => {
+  try {
+    const oldCard = db.prepare("SELECT status, credit FROM payment_cards WHERE barcode = ?").get(oldBarcode);
+    const newCard = db.prepare("SELECT status FROM payment_cards WHERE barcode = ?").get(newBarcode);
+
+    if (!oldCard) return { error: "البطاقة القديمة غير موجودة." };
+    if (!newCard) return { error: "البطاقة الجديدة غير موجودة." };
+    if (oldCard.status !== "Blocked") return { error: "لا يمكن نقل الرصيد إلا من بطاقة محظورة." };
+    if (!["Active", "Inactive"].includes(newCard.status)) return { error: "البطاقة الجديدة يجب أن تكون مفعلة أو غير مفعلة." };
+
+    const amountToTransfer = oldCard.credit;
+    if (amountToTransfer <= 0) return { error: "لا يوجد رصيد متاح للنقل." };
+
+    // **1️⃣ Withdraw Money from Old Card (by making a "negative top-up" purchase)**
+    const withdrawResult = topUpCard(oldBarcode, amountToTransfer, false); // Set `isTopUp = false` to withdraw
+    if (withdrawResult.error) return { error: "فشل في خصم الرصيد من البطاقة القديمة." };
+
+    // **2️⃣ Top-Up Money to New Card**
+    const topUpResult = topUpCard(newBarcode, amountToTransfer, true); // Set `isTopUp = true` to add balance
+    if (topUpResult.error) return { error: "فشل في شحن الرصيد إلى البطاقة الجديدة." };
+
+    console.log(`✅ Successfully transferred ${amountToTransfer} DA from ${oldBarcode} to ${newBarcode}.`);
+    return { success: true, newBalance: topUpResult.newBalance };
+
+  } catch (error) {
+    console.error("❌ Error transferring money:", error.message);
+    return { error: "فشل في تحويل الرصيد." };
+  }
+});
+
 
 
 

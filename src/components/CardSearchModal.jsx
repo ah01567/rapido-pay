@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
 import Barcode from "react-barcode";
+import { IoCartOutline } from "react-icons/io5";
+import { MdAddCard } from "react-icons/md";
+import { HiOutlineArrowsRightLeft } from "react-icons/hi2";
+import { TbReportSearch } from "react-icons/tb";
+import { FaBan } from "react-icons/fa";
 
 const CardSearchModal = ({ isOpen, onClose, card }) => {
   if (!isOpen || !card) return null;
@@ -14,6 +19,9 @@ const CardSearchModal = ({ isOpen, onClose, card }) => {
   const [selectedTypeCredit, setSelectedTypeCredit] = useState(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [newCardBarcode, setNewCardBarcode] = useState("");
+  const [showTransactionHistory, setShowTransactionHistory] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+
 
 
 
@@ -162,6 +170,27 @@ const processTransaction = () => {
 
   
 
+  // Transactions history
+  const fetchTransactionHistory = () => {
+    if (showTransactionHistory) {
+      setShowTransactionHistory(false); 
+      return;
+    }
+  
+    window.api.getTransactionHistory(card.barcode)
+      .then((data) => {
+        if (data.error) {
+          console.error("Error fetching transaction history:", data.error);
+        } else {
+          setTransactions(data);
+          setShowTransactionHistory(true);
+        }
+      })
+      .catch((error) => console.error("Error fetching transaction history:", error));
+  };  
+
+  
+
   // Transfer the Money from a BLOCKED CARD to a NEW CARD:
   const handleTransferMoney = () => {
     if (!newCardBarcode) {
@@ -203,7 +232,7 @@ const processTransaction = () => {
         <div className="flex w-full justify-between gap-3">
 
           {/* Left Box */}
-          <div className="w-2/5 p-4 rounded-lg shadow-sm text-right">
+          <div className="w-2/5 p-4 rounded-lg shadow-sm text-right border border-gray">
             <p 
                 className={`flex items-center px-3 py-1 rounded-lg text-lg font-semibold ${
                     card.status === "Active"
@@ -255,7 +284,7 @@ const processTransaction = () => {
 
 
           {/* Right Box */}
-          <div className="w-3/5 p-4 rounded-lg shadow-sm text-center border border-black">
+          <div className="w-3/5 p-4 rounded-lg shadow-sm text-center border border-gray">
             <p className="text-2xl font-semibold" style={{ color: '#4b4b4b' }}>
               {card.credit} DA
             </p>
@@ -269,7 +298,7 @@ const processTransaction = () => {
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-500 shadow-md"
                 onClick={() => setShowTransferModal(true)}
               >
-                🔄 تحويل الأموال إلى بطاقة جديدة
+                <HiOutlineArrowsRightLeft /> تحويل الأموال إلى بطاقة جديدة
               </button>
             ) : (
               // If the card is ACTIVE or INACTIVE, show both buttons
@@ -278,13 +307,13 @@ const processTransaction = () => {
                   className="flex-1 flex items-center justify-center gap-2 bg-green-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 shadow-md"
                   onClick={() => handleTransaction("topUp")}
                 >
-                  ⟲ شحن الرصيد
+                  <MdAddCard /> شحن الرصيد
                 </button>
                 <button
                   className="flex-1 flex items-center justify-center gap-2 bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 shadow-md"
                   onClick={() => handleTransaction("purchase")}
                 >
-                  🛒 شراء
+                  <IoCartOutline />  شراء
                 </button>
               </div>
             )}
@@ -299,8 +328,9 @@ const processTransaction = () => {
               </div>
               <div className="w-1/2 text-center">
                 <p className="text-xl font-semibold">0 DA</p>
-                <p className="text-sm text-gray-500">إجمالي المصروفات</p>
+                <p className="text-sm text-gray-500">إجمالي المشتريات</p>
               </div>
+              
             </div>
           </div>
         </div>
@@ -370,19 +400,93 @@ const processTransaction = () => {
       )}
 
 
-
-
-
-        {/* Block 'Active Card' Button */}
+        {/* Block + Transactions History 'Active Card' Button */}
         {card.status === "Active" && (
-          <button
-            className="mt-6 w-full flex items-center justify-center gap-2 bg-white text-red-600 border border-red-600 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 shadow-md"
-            style={{ width: '40%', variant: 'outlined' }}
-            onClick={handleBlockCard}
-          >
-            حظر البطاقة
-          </button>
+          <div className="mt-6 flex justify-between w-full gap-5">
+            {/* Block Card Button */}
+            <button
+              className="flex-1 flex items-center justify-center gap-2 bg-white text-red-600 border border-red-600 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 shadow-md"
+              onClick={handleBlockCard}
+            >
+              <FaBan /> حظر البطاقة
+            </button>
+
+            {/* Transaction History Button */}
+            <button
+              className="flex-1 flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-50 shadow-md"
+              onClick={fetchTransactionHistory}
+            >
+              <TbReportSearch /> سجل الحركات المالية
+            </button>
+          </div>
         )}
+
+
+        {/* Block + Transactions History 'Active Card' Button */}
+        {card.status === "Blocked" && (
+          <div className="mt-6 flex justify-between w-full gap-5">
+
+            {/* Transaction History Button */}
+            <button
+              className="flex-1 flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-50 shadow-md"
+              onClick={fetchTransactionHistory}
+            >
+              <TbReportSearch /> سجل الحركات المالية
+            </button>
+          </div>
+        )}
+
+
+        {showTransactionHistory && (
+          <div className="mt-4 w-full bg-white p-4 border border-gray" dir="rtl">
+            <h2 className="text-xl font-bold mb-4 text-center">سجل الحركات المالية</h2>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="p-3 text-gray-700">التاريخ</th>
+                  <th className="p-3 text-gray-700">مبلغ التحويل</th>
+                  <th className="p-3 text-gray-700">المكافأة</th>
+                  <th className="p-3 text-gray-700">الرصيد القديم</th>
+                  <th className="p-3 text-gray-700">الرصيد الجديد</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.length > 0 ? (
+                  transactions.map((transaction, index) => {
+                    // Extract date and time from transaction.date
+                    const [date, time] = transaction.date.split(" ");
+
+                    return (
+                      <tr key={index} className="border-b text-center">
+                        <td className="p-3">
+                          {date} <span className="text-gray-500">({time})</span>
+                        </td>
+                        <td
+                          className={`p-3 font-bold ${
+                            transaction.amount < 0 ? "text-red-600" : "text-green-600"
+                          }`}
+                        >
+                          {Math.abs(transaction.amount)} دج
+                          {transaction.amount < 0 && " -"}
+                        </td>
+                        <td className="p-3">{transaction.bonus} دج</td>
+                        <td className="p-3 text-gray-500">{transaction.old_balance} دج</td>
+                        <td className="p-3">{transaction.new_balance} دج</td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="p-3 text-gray-500 text-center">
+                      لا توجد معاملات
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
 
 
 

@@ -27,7 +27,10 @@ const LostCardsModal = ({ isOpen, onClose, loading, lostCards }) => {
               <ul className="grid grid-cols-2 gap-4 text-center">
                 {lostCards.map((card, index) => (
                   <li key={index} className="border p-4 rounded-lg shadow-md">
-                    <Barcode value={card.barcode} format="UPC" width={1.5} height={50} />
+                    <div className="flex justify-center items-center">
+                      <Barcode value={card.barcode} format="UPC" width={1.5} height={50} />
+                    </div>
+                    <p className="text-sm text-gray-600"> <b> {card.barcode} </b></p>
                     <p className="text-sm text-gray-600"> {card.credit} DA</p>
                     <p className="text-sm text-gray-600">تاريخ الإنشاء: {card.creation_date.split(" ")[0]}</p>
                     <p 

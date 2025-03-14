@@ -157,6 +157,17 @@ ipcMain.handle("block-card", async (event, barcode) => {
 
 
 
+// Fetch transactions history of a card:
+ipcMain.handle("get-transaction-history", async (event, barcode) => {
+  try {
+    const stmt = db.prepare("SELECT date, amount, bonus, old_balance, new_balance FROM transactions_history WHERE barcode = ? ORDER BY date DESC");
+    return stmt.all(barcode);
+  } catch (error) {
+    console.error("Error fetching transaction history:", error);
+    return { error: "Failed to fetch transaction history." };
+  }
+});
+
 
 // Handle transfer the money from a blocked card to a new card
 ipcMain.handle("transfer-money-to-new-card", async (event, oldBarcode, newBarcode) => {
@@ -327,25 +338,34 @@ ipcMain.handle("get-card-types", async () => {
 
 
 // Handle deleting a card from the database
-ipcMain.handle("delete-card-type", async (event, cardId) => {
+ipcMain.handle("delete-card-type", async (event, cardTypeId) => {
   try {
-    console.log("Deleting card with ID:", cardId);
+    console.log("Deleting card type with ID:", cardTypeId);
 
+    // Step 1: Delete the card type
     const stmt = db.prepare("DELETE FROM card_types WHERE id = ?");
-    const result = stmt.run(cardId);
+    const result = stmt.run(cardTypeId);
 
     if (result.changes > 0) {
-      console.log("Card deleted successfully!");
+      console.log("Card type deleted successfully!");
+
+      // Step 2: Update `payment_cards` that had this type to `0`
+      const updateStmt = db.prepare("UPDATE payment_cards SET type = 0 WHERE type = ?");
+      updateStmt.run(cardTypeId);
+
+      console.log("Updated all payment_cards with this type to 0.");
+      
       return { success: true };
     } else {
-      console.error("No card found to delete.");
-      return { success: false, error: "Card not found." };
+      console.error("No card type found to delete.");
+      return { success: false, error: "Card type not found." };
     }
   } catch (error) {
-    console.error("Error deleting card:", error);
-    return { success: false, error: "Failed to delete card." };
+    console.error("Error deleting card type:", error);
+    return { success: false, error: "Failed to delete card type." };
   }
 });
+
 
 
 

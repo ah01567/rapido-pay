@@ -31,7 +31,7 @@ const ActiveCardsModal = ({ isOpen, onClose, loading, activeCards }) => {
                 <div className="grid grid-cols-2 gap-4 w-full">
                 {activeCards.map((card, index) => (
                     <div key={index} className="border border-gray-300 p-4 rounded-lg shadow-md text-center">
-                    <div className="mb-3">
+                    <div className="flex justify-center items-center">
                         <Barcode value={card.barcode} format="UPC" width={1.5} height={40} style={{}}/>
                     </div>
                     <p className="text-sm text-gray-600 mb-3"><b>{card.barcode}</b></p>

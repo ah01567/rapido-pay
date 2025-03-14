@@ -93,29 +93,29 @@ const handleSaveCard = async () => {
   // Delete Card
   const handleDeleteCard = async () => {
     if (!selectedCardId) return;
-
+  
     try {
-      console.log("🗑 Sending request to delete card...", selectedCardId);
-
-      // ✅ Invoke Electron IPC method
+      console.log("🗑 Sending request to delete card type...", selectedCardId);
+  
+      // Invoke Electron IPC method
       const response = await window.electron.ipcRenderer.invoke("delete-card-type", selectedCardId);
-
+  
       if (response.success) {
-        console.log("✅ Card deleted successfully!");
-
-        // ✅ Update state to remove the deleted card
+        console.log("Card type deleted successfully!");
+  
+        // Update state to remove the deleted card type from UI
         setCards((prevCards) => prevCards.filter((card) => card.id !== selectedCardId));
-
+  
         handleCloseDeleteModal(); // Close delete confirmation modal
       } else {
-        console.error("🚨 Failed to delete card:", response.error);
+        console.error("Failed to delete card type:", response.error);
         alert("حدث خطأ أثناء حذف البطاقة!");
       }
     } catch (error) {
-      console.error("🚨 Error deleting card:", error);
+      console.error("Error deleting card type:", error);
       alert("حدث خطأ أثناء حذف البطاقة!");
     }
-  };
+  };  
 
 
   return (
@@ -149,8 +149,8 @@ const handleSaveCard = async () => {
 
         {/* Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 mr-64 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 mr-64 z-50" onClick={handleCloseModal} >
+            <div className="bg-white p-6 rounded-lg shadow-lg w-96" onClick={(e) => e.stopPropagation()}  >
               <h2 className="text-xl font-bold mb-4 text-center">إضافة بطاقة جديدة</h2>
 
               {/* Card Price Input */}

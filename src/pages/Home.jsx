@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaSearch } from "react-icons/fa"; 
+import { FaSearch, FaSyncAlt } from "react-icons/fa";
 import NewCard from "../components/NewCard";
 import SidebarNav from "../components/Sidebar";
 import InactiveCardsModal from "../components/InactiveCardsModal"; 
@@ -26,6 +26,13 @@ const Home = () => {
     total_inactive_cards: 0,
     total_lost: 0,
   });
+
+
+  const handleRefresh = () => {
+    setBarcodeInput(""); 
+    window.location.reload(); 
+  };
+  
 
 
   // Fetch report data when the component loads
@@ -94,14 +101,6 @@ const Home = () => {
         .finally(() => setLoading(false));
     }
   };
-  
-
-
-  // Fetch all cards and open modal
-  const fetchAllCards = () => {
-    setLoading(true);
-    setModalOpen(true);
-  };
 
 
   // Handle search by barcode
@@ -145,30 +144,41 @@ const Home = () => {
             ! ابحث عن البطاقة عن طريق المسح أو إدخال رقم الكود
           </label>
 
-          {/* Search Input with Icon */}
-          <div className="relative flex items-center w-full">
-            {/* Search Icon (Clickable) */}
-            <div className="absolute left-3 text-gray-500 hover:text-gray-700" onClick={handleSearch}>
-              <FaSearch size={18} />
-            </div>
+          {/* Flex container for Search and Refresh */}
+          <div className="flex items-center gap-3">
+            {/* Refresh Button (Outside the Input) */}
+            <button
+              onClick={handleRefresh}
+              className="p-3 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+            >
+              <FaSyncAlt size={18} className="text-gray-700" />
+            </button>
 
-            {/* Input Field */}
-            <input
-              type="text"
-              value={barcodeInput}
-              onChange={(e) => setBarcodeInput(e.target.value)}
-              placeholder="أدخل رقم البطاقة هنا..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 text-gray-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right placeholder-right"
-              dir="rtl"
-              onKeyPress={(e) => e.key === "Enter" && handleSearch()} 
-            />
+            {/* Search Input with Icon */}
+            <div className="relative flex items-center w-full">
+              {/* Search Icon (Clickable) */}
+              <div className="absolute left-3 text-gray-500 hover:text-gray-700" onClick={handleSearch}>
+                <FaSearch size={18} />
+              </div>
+
+              {/* Input Field */}
+              <input
+                type="text"
+                value={barcodeInput}
+                onChange={(e) => setBarcodeInput(e.target.value)}
+                placeholder="أدخل رقم البطاقة هنا..."
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 text-gray-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right placeholder-right"
+                dir="rtl"
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+              />
+            </div>
           </div>
         </div>
 
         {/* Ticket Section */}
         <div className="w-full flex justify-center gap-6 mt-8">
 
-          <div onClick={fetchAllCards} className="cursor-pointer bg-white p-4 rounded-l shadow-md w-48 text-center border border-gray-300">
+          <div className="cursor-pointer bg-white p-4 rounded-l shadow-md w-48 text-center border border-gray-300">
             <p className="text-2xl font-semibold text-green-700" style={{fontSize: '30px'}}>{report.total_cards}</p>
             <h3 className="text-lg font-bold  text-gray-700 mt-4" style={{fontSize: '20px'}}>إجمالي البطاقات</h3>
           </div>

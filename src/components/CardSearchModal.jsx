@@ -324,7 +324,7 @@ const processTransaction = () => {
         <div className="mt-10 flex justify-between w-full text-gray-700 border-t pt-4">
               <div className="w-1/2 text-center">
                 <p className="text-xl font-semibold">0</p>
-                <p className="text-sm text-gray-500">إجمالي الطلبات</p>
+                <p className="text-sm text-gray-500">إجمالي اِستعمال البطاقة</p>
               </div>
               <div className="w-1/2 text-center">
                 <p className="text-xl font-semibold">0 DA</p>

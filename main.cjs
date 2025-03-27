@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
-const { db, createMultipleCards, getAllPaymentCards, getTodayReport, getLostCards, topUpCard } = require("./src/database/database.cjs"); 
+const { db, createMultipleCards, getAllPaymentCards, getTodayReport, getLostCards, topUpCard, getAccounts, addMember, deleteMember } = require("./src/database/database.cjs"); 
 
 let mainWindow;
 
@@ -491,6 +491,42 @@ ipcMain.handle("get-daily-income", async () => {
   } catch (error) {
     console.error("Error fetching daily income:", error);
     return { error: "Failed to fetch daily income." };
+  }
+});
+
+
+
+
+// Fetch the Users account
+ipcMain.handle("get-accounts", async () => {
+  try {
+    const accounts = getAccounts();
+    return accounts;
+  } catch (err) {
+    console.error("Error fetching accounts:", err);
+    return { error: "Failed to fetch accounts" };
+  }
+});
+
+
+// Add new account
+ipcMain.handle('add-member', async (event, memberData) => {
+  try {
+    return await addMember(memberData);
+  } catch (error) {
+    console.error("Error in add-member handler:", error);
+    return { success: false, error: "Failed to add member" };
+  }
+});
+
+
+// Delete account
+ipcMain.handle("delete-member", async (event, id) => {
+  try {
+    return deleteMember(id);
+  } catch (error) {
+    console.error("IPC delete-member error:", error);
+    return { success: false, error: "IPC delete failed" };
   }
 });
 

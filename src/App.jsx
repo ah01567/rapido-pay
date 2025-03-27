@@ -3,7 +3,7 @@ import Home from "./pages/Home";
 import Analytics from "./pages/Analytics";
 import CardTypes from "./pages/cardTypes";
 import Login from "./pages/Login";
-
+import StoreMembers from "./pages/StoreMembers"; 
 
 function Layout({ children }) {
   const location = useLocation();
@@ -27,6 +27,7 @@ function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/cardTypes" element={<CardTypes />} />
+          <Route path="/store-members" element={<StoreMembers />} />
           <Route path="/login" element={<Login />} />
           
           {/* ✅ Redirect any undefined route to `/home` */}

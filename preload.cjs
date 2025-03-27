@@ -26,6 +26,12 @@ contextBridge.exposeInMainWorld("api", {
   saveCardType: (cardData) => ipcRenderer.invoke("save-card-type", cardData),  
   getCardTypes: () => ipcRenderer.invoke("get-card-types"), 
   deleteCardType: (cardId) => ipcRenderer.invoke("delete-card-type", cardId), 
+
+  getAccounts: () => ipcRenderer.invoke('get-accounts'),
+  addMember: (memberData) => ipcRenderer.invoke('add-member', memberData),
+  deleteMember: (id) => ipcRenderer.invoke("delete-member", id),
+
+
 });
 
 contextBridge.exposeInMainWorld("electron", {

@@ -2,6 +2,7 @@ import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } fr
 import { FaHome, FaSignOutAlt } from "react-icons/fa";
 import { TbDeviceDesktopAnalytics } from "react-icons/tb";
 import { FaCreditCard } from "react-icons/fa";
+import { FaUsers } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 const SidebarNav = () => {
@@ -59,6 +60,18 @@ const SidebarNav = () => {
             </ListItemIcon>
             <ListItemText 
             primary="بطاقات المتجر" 
+              sx={{ textAlign: "right", fontSize: "1.2rem", "& .MuiTypography-root": { fontSize: "1.2rem", fontWeight: "bold" } }} 
+            />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/store-members">
+            <ListItemIcon>
+              <FaUsers size={30} />
+            </ListItemIcon>
+            <ListItemText 
+              primary="أعضاء المتجر" 
               sx={{ textAlign: "right", fontSize: "1.2rem", "& .MuiTypography-root": { fontSize: "1.2rem", fontWeight: "bold" } }} 
             />
           </ListItemButton>

@@ -118,17 +118,91 @@ function topUpCard(barcode, amount, isTopUp = true, selectedCardTypeId = null, b
 
 
 
-
-
-
-
-
-
-
 // Function to fetch Lost Cards (Blocked status)
 const getLostCards = () => {
   return db.prepare("SELECT * FROM payment_cards WHERE status = 'Blocked'").all();
 };
+
+
+
+
+function getAccounts() {
+  return db.prepare("SELECT id, name, phone, role, creation_date FROM accounts").all();
+}
+
+
+
+// Add this to your existing database functions
+const addMember = async (memberData) => {
+  try {
+    // Validate inputs
+    if (!memberData.name || !memberData.phone || !memberData.password) {
+      throw new Error("All fields are required");
+    }
+
+    // Check for duplicate phone
+    const exists = db.prepare("SELECT 1 FROM accounts WHERE phone = ?").get(memberData.phone);
+    if (exists) {
+      throw new Error("Phone number already exists");
+    }
+
+    // Hash password (install bcryptjs first: npm install bcryptjs)
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(memberData.password, 10);
+
+    // Insert new member
+    const stmt = db.prepare(`
+      INSERT INTO accounts (name, phone, password, role) 
+      VALUES (?, ?, ?, ?)
+    `);
+    
+    const result = stmt.run(
+      memberData.name,
+      memberData.phone,
+      hashedPassword,
+      memberData.role || 'user'
+    );
+
+    // Return the newly created member
+    const newMember = db.prepare(`
+      SELECT id, name, phone, role, creation_date 
+      FROM accounts 
+      WHERE id = ?
+    `).get(result.lastInsertRowid);
+
+    return { 
+      success: true,
+      member: newMember
+    };
+  } catch (error) {
+    console.error("Database error in addMember:", error);
+    return { 
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+
+
+const deleteMember = (id) => {
+  try {
+    const stmt = db.prepare("DELETE FROM accounts WHERE id = ?");
+    const result = stmt.run(id);
+
+    if (result.changes > 0) {
+      console.log(`✅ Member with ID ${id} deleted.`);
+      return { success: true };
+    } else {
+      return { success: false, error: "Member not found" };
+    }
+  } catch (error) {
+    console.error("Error deleting member:", error);
+    return { success: false, error: "Failed to delete member" };
+  }
+};
+
+
 
 
 
@@ -188,6 +262,19 @@ db.exec(`
 
 
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL,
+    creation_date DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+
+
 // Export `db` and Functions
 module.exports = {
   db,
@@ -227,5 +314,11 @@ module.exports = {
   topUpCard,
 
   getLostCards,
+
+  getAccounts,
+
+  addMember, 
+
+  deleteMember,
 
 };

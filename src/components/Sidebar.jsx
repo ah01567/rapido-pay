@@ -4,8 +4,18 @@ import { TbDeviceDesktopAnalytics } from "react-icons/tb";
 import { FaCreditCard } from "react-icons/fa";
 import { FaUsers } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
 
 const SidebarNav = () => {
+
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear(); 
+    navigate("/login");   
+  };
+
   return (
     <Drawer
       variant="permanent"
@@ -78,7 +88,7 @@ const SidebarNav = () => {
         </ListItem>
 
         <ListItem disablePadding>
-          <ListItemButton component={Link} to="/login">
+          <ListItemButton onClick={handleLogout}>
             <ListItemIcon>
               <FaSignOutAlt size={30}/>
             </ListItemIcon>

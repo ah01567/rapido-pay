@@ -216,7 +216,7 @@ const StoreMembers = () => {
               <div className="flex justify-end gap-2 mt-6">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+                  className="px-4 py-2 border rounded-lg text-gray-700 bg-gray-100"
                 >
                   إلغاء
                 </button>

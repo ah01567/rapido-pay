@@ -205,6 +205,39 @@ const deleteMember = (id) => {
 
 
 
+const bcrypt = require("bcryptjs");
+
+const loginUser = async (phone, password) => {
+  try {
+    const stmt = db.prepare("SELECT id, name, phone, password, role FROM accounts WHERE phone = ?");
+    const user = stmt.get(phone);
+
+    if (!user) {
+      return { success: false, error: "الحساب غير موجود." };
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return { success: false, error: "كلمة المرور غير صحيحة." };
+    }
+
+    // Don't return password
+    const { password: _, ...userWithoutPassword } = user;
+
+    return {
+      success: true,
+      user: userWithoutPassword,
+    };
+  } catch (error) {
+    console.error("Login error:", error);
+    return { success: false, error: "فشل تسجيل الدخول." };
+  }
+};
+
+
+
+
 
 // Create payment_cards table
 db.exec(`
@@ -320,5 +353,7 @@ module.exports = {
   addMember, 
 
   deleteMember,
+
+  loginUser
 
 };

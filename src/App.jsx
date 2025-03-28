@@ -4,6 +4,7 @@ import Analytics from "./pages/Analytics";
 import CardTypes from "./pages/cardTypes";
 import Login from "./pages/Login";
 import StoreMembers from "./pages/StoreMembers"; 
+import CashierPage from './pages/CashierPage';
 
 function Layout({ children }) {
   const location = useLocation();
@@ -16,23 +17,49 @@ function Layout({ children }) {
   );
 }
 
+
+const ProtectedRoute = ({ children }) => {
+  const userRole = localStorage.getItem("user_role");
+  if (userRole !== "admin") {
+    return <Navigate to="/cashier" replace />;
+  }
+  return children;
+};
+
+
+
+
 function App() {
   return (
     <Router>
       <Layout>
-        <Routes>
-          {/* ✅ Redirect from root `/` to `/home` */}
-          <Route path="/" element={<Navigate to="/home" />} />
-          
-          <Route path="/home" element={<Home />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/cardTypes" element={<CardTypes />} />
-          <Route path="/store-members" element={<StoreMembers />} />
-          <Route path="/login" element={<Login />} />
-          
-          {/* ✅ Redirect any undefined route to `/home` */}
-          <Route path="*" element={<Navigate to="/home" />} />
-        </Routes>
+      <Routes>
+  {/* Root redirection */}
+  <Route path="/" element={
+    localStorage.getItem("user_role") === "admin"
+      ? <Navigate to="/home" />
+      : localStorage.getItem("user_role") === "user"
+      ? <Navigate to="/cashier" />
+      : <Navigate to="/login" />
+  } />
+
+  {/* Admin pages */}
+  <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+  <Route path="/cardTypes" element={<ProtectedRoute><CardTypes /></ProtectedRoute>} />
+  <Route path="/store-members" element={<ProtectedRoute><StoreMembers /></ProtectedRoute>} />
+
+  {/* Cashier page */}
+  <Route path="/cashier" element={<CashierPage />} />
+
+  {/* Public */}
+  <Route path="/login" element={<Login />} />
+
+  {/* Fallback */}
+  <Route path="*" element={<Navigate to="/" />} />
+</Routes>
+
+
       </Layout>
     </Router>
   );

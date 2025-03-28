@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld("api", {
   addMember: (memberData) => ipcRenderer.invoke('add-member', memberData),
   deleteMember: (id) => ipcRenderer.invoke("delete-member", id),
 
+  loginUser: (credentials) => ipcRenderer.invoke("login-user", credentials),
+
 
 });
 

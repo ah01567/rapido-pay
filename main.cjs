@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
-const { db, createMultipleCards, getAllPaymentCards, getTodayReport, getLostCards, topUpCard, getAccounts, addMember, deleteMember } = require("./src/database/database.cjs"); 
+const { db, createMultipleCards, getAllPaymentCards, getTodayReport, getLostCards, topUpCard, getAccounts, addMember, deleteMember, loginUser } = require("./src/database/database.cjs"); 
 
 let mainWindow;
 
@@ -528,6 +528,14 @@ ipcMain.handle("delete-member", async (event, id) => {
     console.error("IPC delete-member error:", error);
     return { success: false, error: "IPC delete failed" };
   }
+});
+
+
+
+
+// login into an account
+ipcMain.handle("login-user", async (event, { phone, password }) => {
+  return await loginUser(phone, password);
 });
 
 

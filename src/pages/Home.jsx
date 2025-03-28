@@ -139,7 +139,7 @@ const Home = () => {
         </h1>
 
         {/* Search Bar */}
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-xl mb-5">
           <label className="block text-gray-700 text-lg mb-2">
             ! ابحث عن البطاقة عن طريق المسح أو إدخال رقم الكود
           </label>

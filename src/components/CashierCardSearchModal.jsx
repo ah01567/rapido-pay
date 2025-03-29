@@ -15,11 +15,32 @@ const CahierCardSearchModal = ({ isOpen, onClose, card }) => {
   const [totalUses, setTotalUses] = useState(0);
   const [totalPurchases, setTotalPurchases] = useState(0);
   const [showTransferModal, setShowTransferModal] = useState(false);
-  const [newCardBarcode, setNewCardBarcode] = useState("");
   const [showTransactionHistory, setShowTransactionHistory] = useState(false);
   const [transactions, setTransactions] = useState([]);
 
 
+
+  // helper to get connected to the server
+  const apiRequest = async (endpoint, method = 'GET', body = null) => {
+    try {
+      const options = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      };
+      
+      if (body) {
+        options.body = JSON.stringify(body);
+      }
+  
+      const response = await fetch(`http://localhost:3001/${endpoint}`, options);
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      return { error: error.message };
+    }
+  };
 
 
 
@@ -54,18 +75,17 @@ const processTransaction = () => {
   const isTopUp = transactionType === "topUp";
   let selectedCardTypeId = isTopUp && selectedCardType !== "0" ? selectedCardType : null;
   let finalAmount = parseFloat(transactionAmount);
-  let bonus = 0; // Default bonus is 0
+  let bonus = 0;
 
-  // If a card type is selected, get its bonus
   if (selectedCardTypeId) {
     const selectedType = cardTypes.find(ct => ct.id == selectedCardTypeId);
     if (selectedType) {
-      finalAmount = selectedType.cardPrice; // Save `cardPrice` as the amount
-      bonus = selectedType.cardCredit - selectedType.cardPrice; // Save bonus separately
+      finalAmount = selectedType.cardPrice;
+      bonus = selectedType.cardCredit - selectedType.cardPrice;
     }
   }
 
-  window.api.topUpCard({ 
+  apiRequest('top-up', 'POST', { 
     barcode: card.barcode, 
     amount: finalAmount,  
     isTopUp,
@@ -90,9 +110,9 @@ const processTransaction = () => {
   
 // Fetch 'totalUse' and 'totalPurchases' of the card
 useEffect(() => {
-  if (!card || !card.barcode || !window.api) return;
+  if (!card || !card.barcode) return;
 
-  window.api.getTransactionHistory(card.barcode)
+  apiRequest(`transactions/${card.barcode}`)
     .then((data) => {
       if (data && Array.isArray(data)) {
         setTransactions(data); 
@@ -120,7 +140,7 @@ useEffect(() => {
       return;
     }
   
-    window.api.getTransactionHistory(card.barcode)
+    apiRequest(`transactions/${card.barcode}`)
       .then((data) => {
         if (data.error) {
           console.error("Error fetching transaction history:", data.error);
@@ -130,30 +150,9 @@ useEffect(() => {
         }
       })
       .catch((error) => console.error("Error fetching transaction history:", error));
-  };  
-
-  
-
-  // Transfer the Money from a BLOCKED CARD to a NEW CARD:
-  const handleTransferMoney = () => {
-    if (!newCardBarcode) {
-      alert("الرجاء إدخال الباركود الخاص بالبطاقة الجديدة.");
-      return;
-    }
-  
-    if (!window.confirm("هل أنت متأكد أنك تريد نقل الأموال إلى البطاقة الجديدة؟")) return;
-  
-    window.api.transferMoneyToNewCard(card.barcode, newCardBarcode)
-      .then((response) => {
-        if (response.error) {
-          alert("❌ خطأ: " + response.error);
-        } else {
-          alert("✅ تم تحويل الرصيد بنجاح!");
-          onClose(); // Close modal after success
-        }
-      })
-      .catch((error) => console.error("❌ Error transferring money:", error));
   };
+
+  
 
   
 
@@ -375,46 +374,6 @@ useEffect(() => {
             </table>
           </div>
         )}
-
-
-
-
-        {/* Transfer Money Modal */}
-        {showTransferModal && (
-          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 mr-64 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center w-96">
-              <h2 className="text-xl font-bold mb-4">إدخال الباركود الخاص بالبطاقة الجديدة</h2>
-              
-              <input
-                type="text"
-                placeholder="أدخل الباركود الجديد"
-                className="border border-gray-300 px-3 py-2 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                value={newCardBarcode}
-                onChange={(e) => setNewCardBarcode(e.target.value)}
-              />
-              
-              <div className="flex gap-4 mt-4">
-                <button
-                  className="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-500 shadow-md"
-                  onClick={handleTransferMoney}
-                >
-                  تأكيد
-                </button>
-                <button
-                  className="bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 shadow-md"
-                  onClick={() => setShowTransferModal(false)}
-                >
-                  إلغاء
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-
-
-
-
 
       </div>
     </div>

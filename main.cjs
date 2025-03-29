@@ -191,11 +191,11 @@ ipcMain.handle("transfer-money-to-new-card", async (event, oldBarcode, newBarcod
     const topUpResult = topUpCard(newBarcode, amountToTransfer, true); // Set `isTopUp = true` to add balance
     if (topUpResult.error) return { error: "فشل في شحن الرصيد إلى البطاقة الجديدة." };
 
-    console.log(`✅ Successfully transferred ${amountToTransfer} DA from ${oldBarcode} to ${newBarcode}.`);
+    console.log(`Successfully transferred ${amountToTransfer} DA from ${oldBarcode} to ${newBarcode}.`);
     return { success: true, newBalance: topUpResult.newBalance };
 
   } catch (error) {
-    console.error("❌ Error transferring money:", error.message);
+    console.error("Error transferring money:", error.message);
     return { error: "فشل في تحويل الرصيد." };
   }
 });

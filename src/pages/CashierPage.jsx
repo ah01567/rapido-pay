@@ -17,32 +17,46 @@ const CashierPage = () => {
     setBarcodeInput(""); 
     window.location.reload(); 
   };
-  
+
 
   // Handle search by barcode
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!barcodeInput.trim()) return;
-
+  
     setLoading(true);
     setSearchedCard(null);
-
-    if (window.api) {
-      window.api.searchCardByBarcode(barcodeInput)
-        .then((data) => {
-          if (data && !data.error) {
-            setSearchedCard(data);
-            setSearchModalOpen(true); 
-          } else {
-            console.error("Error fetching card:", data.error);
-            setSearchedCard(null);
-          }
-        })
-        .catch((error) => console.error("Failed to fetch card:", error))
-        .finally(() => {
-          setLoading(false);
-        });
+    const cleanBarcode = barcodeInput.trim();
+  
+    try {
+      console.log(`Searching for barcode: ${cleanBarcode}`);
+      
+      const response = await fetch(`http://localhost:3001/card/${encodeURIComponent(cleanBarcode)}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server error:", errorData);
+        throw new Error(errorData.error || "Card not found");
+      }
+  
+      const data = await response.json();
+      console.log("Card found:", data);
+      setSearchedCard(data);
+      setSearchModalOpen(true);
+    } catch (error) {
+      console.error("Search failed:", error.message);
+      
+      // Additional debug - check if server is reachable
+      try {
+        const ping = await fetch('http://localhost:3001/healthcheck');
+        console.log("Server healthcheck:", ping.status);
+      } catch (e) {
+        console.error("Server unreachable:", e);
+      }
+    } finally {
+      setLoading(false);
     }
   };
+  
 
 
   const handleLogout = () => {
@@ -52,6 +66,7 @@ const CashierPage = () => {
 
   
   return (
+
     <div className="mr-10 mt-20">
 
       {/* Logout Button (Top-left) */}

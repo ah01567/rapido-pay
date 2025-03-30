@@ -1,18 +1,9 @@
 import { useState, useEffect } from "react";
+import API_BASE_URL from "../utils/apiBase";
 
 const NewCard = () => {
   const [quantity, setQuantity] = useState(1);
-  const [isApiAvailable, setIsApiAvailable] = useState(false);
 
-  useEffect(() => {
-    console.log("🧐 Checking if window.api is available:", window.api);
-    if (window.api && window.api.createMultipleCards) {
-      setIsApiAvailable(true);
-      console.log("window.api is available!");
-    } else {
-      console.error("window.api is NOT available!");
-    }
-  }, []);
 
   const handleCreateCards = () => {
     if (quantity < 1) {
@@ -20,17 +11,20 @@ const NewCard = () => {
       return;
     }
 
-    if (!isApiAvailable) {
-      alert("خطأ: `window.api` غير متاح! تأكد من أن `preload.js` يعمل بشكل صحيح.");
-      return;
-    }
-
-    window.api.createMultipleCards(quantity).then(() => {
-      alert(`${quantity} بطاقة جديدة تم إنشاؤها بنجاح!`);
-      setQuantity(1);
-    }).catch((error) => {
+    window.api.createMultipleCards(quantity)
+    .then((response) => {
+      if (response.error) {
+        alert("حدث خطأ أثناء إنشاء البطاقات: " + response.error);
+      } else {
+        alert(`${quantity} بطاقة جديدة تم إنشاؤها بنجاح!`);
+        setQuantity(1);
+      }
+    })
+    .catch((error) => {
       console.error("فشل إنشاء البطاقات:", error);
+      alert("فشل إنشاء البطاقات. حاول مرة أخرى.");
     });
+    
   };
 
   return (

@@ -6,6 +6,7 @@ import { GrTransaction } from "react-icons/gr";
 import { PieChart, Pie, Cell } from "recharts";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer } from "recharts";
 import SidebarNav from "../components/Sidebar";
+import API_BASE_URL from "../utils/apiBase";
 
 
 const Analytics = () => {
@@ -33,42 +34,57 @@ const Analytics = () => {
 
   // Get total analytics
   useEffect(() => {
-    window.api.getTotalAnalytics().then((data) => {
-      if (!data.error) {
-        setTotalIncome(data.totalIncome);
-        setTotalPurchases(data.totalPurchases);
-        setAvgTopUpAmount(data.avgTopUpAmount);
-        setAvgDailyTransactions(data.avgDailyTransactions);
-      } else {
-        console.error("Error fetching analytics:", data.error);
-      }
-    });
+    window.api.getTotalAnalytics()
+      .then((data) => {
+        if (!data.error) {
+          setTotalIncome(data.totalIncome);
+          setTotalPurchases(data.totalPurchases);
+          setAvgTopUpAmount(data.avgTopUpAmount);
+          setAvgDailyTransactions(data.avgDailyTransactions);
+        } else {
+          console.error("Error fetching analytics:", data.error);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching analytics:", error);
+      });
   }, []);
+  
 
 
   // Get card types distribution:
   useEffect(() => {
-    window.api.getCardTypeDistribution().then((data) => {
-      if (!data.error) {
-        setCardTypeData(data);
-      } else {
-        console.error("Error fetching card type distribution:", data.error);
-      }
-    });
+    window.api.getCardTypeDistribution()
+      .then((data) => {
+        if (!data.error) {
+          setCardTypeData(data);
+        } else {
+          console.error("Error fetching card type distribution:", data.error);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching card type distribution:", error);
+      });
   }, []);
+  
 
 
 
   // Get the Daily Income for the Barchart:
   useEffect(() => {
-    window.api.getDailyIncome().then((data) => {
-      if (!data.error) {
-        setDailyIncomeData(data);
-      } else {
-        console.error("Error fetching daily income:", data.error);
-      }
-    });
+    window.api.getDailyIncome()
+      .then((data) => {
+        if (!data.error) {
+          setDailyIncomeData(data);
+        } else {
+          console.error("Error fetching daily income:", data.error);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching daily income:", error);
+      });
   }, []);
+  
 
 
   return (

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import { useNavigate } from "react-router-dom"; 
+import API_BASE_URL from "../utils/apiBase"; 
 
 const Login = () => {
   const navigate = useNavigate(); 
@@ -13,14 +14,33 @@ const Login = () => {
       alert("يرجى إدخال رقم الهاتف وكلمة المرور");
       return;
     }
-
+  
     try {
-      const result = await window.api.loginUser({ phone, password });
+      const isAdminPC = !!window.api?.loginUser;
+  
+      let result;
+  
+      if (isAdminPC) {
+        // Admin PC with direct DB access
+        result = await window.api.loginUser({ phone, password });
+        console.log("Login Result:", result);
+      } else {
+        // User PC - HTTP call to server
+        const response = await fetch(`${API_BASE_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone, password }),
+        });
+  
+        result = await response.json();
+        console.log("Login Result:", result);
 
+      }
+  
       if (result.success) {
         localStorage.setItem("user_role", result.user.role);
         localStorage.setItem("user_name", result.user.name);
-      
+  
         if (result.user.role === "admin") {
           navigate("/home");
         } else {
@@ -29,11 +49,15 @@ const Login = () => {
       } else {
         alert(result.error || "فشل تسجيل الدخول");
       }
+  
     } catch (error) {
       console.error("Login error:", error);
       alert("حدث خطأ أثناء تسجيل الدخول");
     }
   };
+  
+  
+  
 
   return (
     <div className="min-h-screen flex justify-center items-center" style={{ backgroundColor: "#c5ced4" }}>

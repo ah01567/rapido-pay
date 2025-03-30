@@ -3,6 +3,9 @@ import Barcode from "react-barcode";
 import { IoCartOutline } from "react-icons/io5";
 import { HiOutlineArrowsRightLeft } from "react-icons/hi2";
 import { TbReportSearch } from "react-icons/tb";
+import API_BASE_URL from "../utils/apiBase";
+
+
 
 const CahierCardSearchModal = ({ isOpen, onClose, card }) => {
   if (!isOpen || !card) return null;
@@ -21,21 +24,11 @@ const CahierCardSearchModal = ({ isOpen, onClose, card }) => {
 
 
   // helper to get connected to the server
-  const apiRequest = async (endpoint, method = 'GET', body = null) => {
+  const apiRequest = async (channel, payload = null) => {
     try {
-      const options = {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-      
-      if (body) {
-        options.body = JSON.stringify(body);
-      }
-  
-      const response = await fetch(`http://localhost:3001/${endpoint}`, options);
-      return await response.json();
+      // Invokes the corresponding IPC method exposed in window.api
+      const response = await window.api[channel](payload);
+      return response;
     } catch (error) {
       console.error('API request failed:', error);
       return { error: error.message };
@@ -44,15 +37,33 @@ const CahierCardSearchModal = ({ isOpen, onClose, card }) => {
 
 
 
-  useEffect(() => {
-    if (window.api) {
-      window.api.getCardTypes()
-        .then((data) => {
-          setCardTypes(data || []);
-        })
-        .catch((error) => console.error("Error fetching card types:", error));
+
+  const fetchTransactionHistoryFromServer = async (barcode) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/transactions/${barcode}`); // ← FIXED
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "خطأ أثناء جلب سجل الحركات");
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Fetch transaction history failed:", error.message);
+      return { error: error.message };
     }
+  };
+  
+
+
+  useEffect(() => {
+    apiRequest('card-types')
+      .then((data) => {
+        if (!data.error) setCardTypes(data);
+        else console.error("Error fetching card types:", data.error);
+      })
+      .catch((error) => console.error("Error fetching card types:", error));
   }, []);
+  
+  
 
 
   
@@ -85,13 +96,13 @@ const processTransaction = () => {
     }
   }
 
-  apiRequest('top-up', 'POST', { 
-    barcode: card.barcode, 
-    amount: finalAmount,  
+  window.api.topUpCard({
+    barcode: card.barcode,
+    amount: finalAmount,
     isTopUp,
     selectedCardTypeId,
     bonus
-  })
+  })  
   .then((response) => {
     if (response.error) {
       alert(response.error);
@@ -112,7 +123,7 @@ const processTransaction = () => {
 useEffect(() => {
   if (!card || !card.barcode) return;
 
-  apiRequest(`transactions/${card.barcode}`)
+  fetchTransactionHistoryFromServer(card.barcode)
     .then((data) => {
       if (data && Array.isArray(data)) {
         setTransactions(data); 
@@ -140,7 +151,7 @@ useEffect(() => {
       return;
     }
   
-    apiRequest(`transactions/${card.barcode}`)
+    fetchTransactionHistoryFromServer(card.barcode)
       .then((data) => {
         if (data.error) {
           console.error("Error fetching transaction history:", data.error);

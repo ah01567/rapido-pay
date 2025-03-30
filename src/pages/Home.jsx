@@ -6,6 +6,8 @@ import InactiveCardsModal from "../components/InactiveCardsModal";
 import CardSearchModal from "../components/CardSearchModal";
 import ActiveCardsModal from "../components/ActiveCardsModal";
 import LostCardsModal from "../components/LostCardsModal"; 
+import API_BASE_URL from "../utils/apiBase";
+
 
 const Home = () => {
 
@@ -37,18 +39,18 @@ const Home = () => {
 
   // Fetch report data when the component loads
   useEffect(() => {
-    if (window.api) {
-      window.api.getTodayReport()
-        .then((data) => {
-          if (data && !data.error) {
-            setReport(data);  
-          } else {
-            console.error("Error fetching report:", data.error);
-          }
-        })
-        .catch((error) => console.error("Failed to fetch report:", error));
-    }
+    window.api.getTodayReport()
+      .then((data) => {
+        if (data && !data.error) {
+          setReport(data);
+        } else {
+          console.error("Error fetching report:", data.error);
+        }
+      })
+      .catch((error) => console.error("Failed to fetch report:", error));
   }, []);
+  
+  
   
 
 
@@ -57,17 +59,15 @@ const Home = () => {
     setLoading(true);
     setModalOpen(true);
   
-    if (window.api) {
-      window.api.getInactiveCardsGroupedByDate()
-        .then((data) => {
-          setBarcodes(data || {}); 
-        })
-        .catch((error) => console.error("Error fetching inactive cards:", error))
-        .finally(() => {
-          setLoading(false);
-        });
-    }
+    window.api.getInactiveCardsGroupedByDate()
+    .then((data) => {
+      setBarcodes(data || {});
+    })
+    .catch((error) => console.error("Error fetching inactive cards:", error))
+    .finally(() => setLoading(false));
+  
   };
+  
 
 
   
@@ -75,18 +75,16 @@ const Home = () => {
   const fetchActiveCards = () => {
     setLoading(true);
     setActiveModalOpen(true);
-
-    if (window.api) {
-      window.api.getActiveCards() 
-        .then((data) => {
-          setActiveCards(data || []); 
-        })
-        .catch((error) => console.error("Error fetching active cards:", error))
-        .finally(() => {
-          setLoading(false);
-        });
-    }
+  
+    window.api.getActiveCards()
+    .then((data) => {
+      setActiveCards(data || []);
+    })
+    .catch((error) => console.error("Error fetching active cards:", error))
+    .finally(() => setLoading(false));
+  
   };
+  
 
 
   // Fetch lost (blocked) cards and open modal
@@ -94,39 +92,37 @@ const Home = () => {
     setLoading(true);
     setLostModalOpen(true);
   
-    if (window.api) {
-      window.api.getLostCards()
-        .then((data) => setLostCards(data || [])) 
-        .catch((error) => console.error("Error fetching lost cards:", error))
-        .finally(() => setLoading(false));
-    }
+    window.api.getLostCards()
+    .then((data) => setLostCards(data || []))
+    .catch((error) => console.error("Error fetching lost cards:", error))
+    .finally(() => setLoading(false));
+  
   };
+  
 
 
   // Handle search by barcode
   const handleSearch = () => {
     if (!barcodeInput.trim()) return;
-
+  
     setLoading(true);
     setSearchedCard(null);
-
-    if (window.api) {
-      window.api.searchCardByBarcode(barcodeInput)
-        .then((data) => {
-          if (data && !data.error) {
-            setSearchedCard(data);
-            setSearchModalOpen(true); 
-          } else {
-            console.error("Error fetching card:", data.error);
-            setSearchedCard(null);
-          }
-        })
-        .catch((error) => console.error("Failed to fetch card:", error))
-        .finally(() => {
-          setLoading(false);
-        });
-    }
+  
+    window.api.searchCardByBarcode(barcodeInput)
+    .then((data) => {
+      if (data && !data.error) {
+        setSearchedCard(data);
+        setSearchModalOpen(true);
+      } else {
+        console.error("Error fetching card:", data.error);
+        setSearchedCard(null);
+      }
+    })
+    .catch((error) => console.error("Failed to fetch card:", error))
+    .finally(() => setLoading(false));
+  
   };
+  
 
 
   return (

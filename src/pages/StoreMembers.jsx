@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import SidebarNav from "../components/Sidebar";
+import API_BASE_URL from "../utils/apiBase";
 
 
 const StoreMembers = () => {
@@ -19,10 +20,13 @@ const StoreMembers = () => {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        if (window.api && window.api.getAccounts) {
-          const accounts = await window.api.getAccounts();
-          setMembers(accounts);
-        }
+        const data = await window.api.getAccounts();
+        
+        if (!data.error) {
+          setMembers(data);
+        } else {
+          console.error("Error fetching members:", data.error);
+        }        
       } catch (error) {
         console.error("Error fetching members:", error);
       } finally {
@@ -33,6 +37,7 @@ const StoreMembers = () => {
     fetchMembers();
   }, []);
   
+  
 
   const handleAddMember = async () => {
     try {
@@ -42,11 +47,9 @@ const StoreMembers = () => {
         return;
       }
   
-      // Call the API (password will be hashed in database.cjs)
       const result = await window.api.addMember(newMember);
-  
+      
       if (result.success) {
-        // Add the new member to local state
         setMembers([...members, result.member]);
         
         // Reset form and close modal
@@ -68,6 +71,7 @@ const StoreMembers = () => {
     }
   };
   
+  
 
   
   const handleDeleteMember = async (id) => {
@@ -75,9 +79,11 @@ const StoreMembers = () => {
   
     try {
       const result = await window.api.deleteMember(id);
+      
       if (result.success) {
         setMembers((prev) => prev.filter((m) => m.id !== id));
-        alert(" تم حذف العضو بنجاح");
+      
+        alert("تم حذف العضو بنجاح");
       } else {
         alert(result.error || "حدث خطأ أثناء الحذف");
       }
@@ -86,6 +92,7 @@ const StoreMembers = () => {
       alert("فشل في حذف العضو");
     }
   };
+  
 
   
 

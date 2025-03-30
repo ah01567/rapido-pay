@@ -10,20 +10,22 @@ const CardTypes = () => {
   const [cardPrice, setCardPrice] = useState("");
   const [cardCredit, setCardCredit] = useState("");
 
+
+  
   useEffect(() => {
-    if (window.electron) {
-      window.electron.ipcRenderer
-        .invoke("get-card-types")
-        .then((savedCards) => {
-          if (savedCards && savedCards.length > 0) {
-            setCards(savedCards);
-          }
-        })
-        .catch((error) => {
-          console.error(" Error fetching card types:", error);
-        });
-    }
+    window.api
+      .getCardTypes()
+      .then((savedCards) => {
+        if (savedCards && savedCards.length > 0) {
+          setCards(savedCards);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching card types:", error);
+      });
   }, []);
+
+  
 
   // Open Modal
   const handleOpenModal = () => {

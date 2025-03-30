@@ -5,6 +5,8 @@ import { MdAddCard } from "react-icons/md";
 import { HiOutlineArrowsRightLeft } from "react-icons/hi2";
 import { TbReportSearch } from "react-icons/tb";
 import { FaBan } from "react-icons/fa";
+import API_BASE_URL from "../utils/apiBase"
+
 
 const CardSearchModal = ({ isOpen, onClose, card }) => {
   if (!isOpen || !card) return null;
@@ -27,16 +29,15 @@ const CardSearchModal = ({ isOpen, onClose, card }) => {
 
 
 
-
   useEffect(() => {
-    if (window.api) {
-      window.api.getCardTypes()
-        .then((data) => {
-          setCardTypes(data || []);
-        })
-        .catch((error) => console.error("Error fetching card types:", error));
-    }
+    window.api.getCardTypes()
+      .then((data) => {
+        setCardTypes(data || []);
+      })
+      .catch((error) => console.error("Error fetching card types:", error));
   }, []);
+  
+  
 
 
 
@@ -54,40 +55,38 @@ const handleCardTypeChange = (newType) => {
 
 
 // Function to Confirm and Apply the Selected Card Type
-const confirmCardTypeSelection = () => {
-  if (!selectedTypeToConfirm || !selectedTypeCredit) return;
+    const confirmCardTypeSelection = () => {
+      if (!selectedTypeToConfirm || !selectedTypeCredit) return;
 
-  const selectedType = cardTypes.find((type) => type.id == selectedTypeToConfirm);
-  if (!selectedType) return;
+      const selectedType = cardTypes.find((type) => type.id == selectedTypeToConfirm);
+      if (!selectedType) return;
 
-  const actualAmount = selectedType.cardPrice; // Use cardPrice, not cardCredit
-  const bonus = selectedType.cardCredit - selectedType.cardPrice; // Calculate the correct bonus
-
-  window.api.updateCardType(card.barcode, selectedTypeToConfirm)
-    .then(() => {
-      console.log("✅ Card type updated successfully!");
-
-      window.api.topUpCard({
-        barcode: card.barcode,
-        amount: actualAmount,  // Now sending the correct `amount`
-        isTopUp: true,
-        selectedCardTypeId: selectedTypeToConfirm, 
-        bonus: bonus // Send the correct bonus
+      const actualAmount = selectedType.cardPrice;
+      const bonus = selectedType.cardCredit - selectedType.cardPrice;
+      window.api.updateCardType(card.barcode, selectedTypeToConfirm)
+      .then(() => {
+        console.log("Card type updated successfully!");
+        return window.api.topUpCard({
+          barcode: card.barcode,
+          amount: actualAmount,
+          isTopUp: true,
+          selectedCardTypeId: selectedTypeToConfirm,
+          bonus: bonus,
+        });
       })
       .then((response) => {
-        if (response.error) {
-          alert("خطأ في الشحن: " + response.error);
-        } else {
-          alert(`✅ تم تحديث نوع البطاقة وشحنها بنجاح! الرصيد الحالي: ${response.newBalance} DA`);
-          setSelectedCardType(selectedTypeToConfirm); // Update UI
-        }
-      })
-      .catch((error) => console.error("❌ Error in top-up:", error));
+      if (response.error) {
+        alert("خطأ في الشحن: " + response.error);
+      } else {
+        alert(`تم تحديث نوع البطاقة وشحنها بنجاح! الرصيد الحالي: ${response.newBalance} DA`);
+        setSelectedCardType(selectedTypeToConfirm);
+      }
     })
-    .catch((error) => console.error("❌ Error updating card type:", error));
+    .catch((error) => console.error("Error in top-up:", error));
 
   setShowTypeConfirmation(false);
 };
+
 
 
   
@@ -121,22 +120,23 @@ const processTransaction = () => {
     }
   }
 
-  window.api.topUpCard({ 
-    barcode: card.barcode, 
-    amount: finalAmount,  
-    isTopUp,
-    selectedCardTypeId,
-    bonus
-  })
-  .then((response) => {
+    window.api.topUpCard({
+      barcode: card.barcode,
+      amount: finalAmount,
+      isTopUp,
+      selectedCardTypeId,
+      bonus
+    })
+      .then(response => {
     if (response.error) {
-      alert(response.error);
-    } else {
-      alert(`✅ ${isTopUp ? "تم الشحن بنجاح!" : "تم الشراء بنجاح!"} الرصيد الحالي: ${response.newBalance} DA`);
-      onClose(); 
-    }
-  })
-  .catch((error) => console.error("Error:", error));
+        alert(response.error);
+      } else {
+        alert(`✅ ${isTopUp ? "تم الشحن بنجاح!" : "تم الشراء بنجاح!"} الرصيد الحالي: ${response.newBalance} DA`);
+        onClose();
+      }
+    })
+    .catch((error) => console.error("❌ Error in top-up:", error));
+  
 
   setShowTransactionModal(false); 
 };
@@ -148,12 +148,12 @@ const processTransaction = () => {
 
 // Fetch 'totalUse' and 'totalPurchases' of the card
 useEffect(() => {
-  if (!card || !card.barcode || !window.api) return;
+  if (!card || !card.barcode) return;
 
   window.api.getTransactionHistory(card.barcode)
     .then((data) => {
-      if (data && Array.isArray(data)) {
-        setTransactions(data); 
+      if (Array.isArray(data)) {
+        setTransactions(data);
         setTotalUses(data.length);
         const purchases = data
           .filter(t => t.amount < 0)
@@ -182,17 +182,18 @@ useEffect(() => {
   
     if (!window.confirm("هل أنت متأكد أنك تريد حظر هذه البطاقة؟")) return;
   
-    window.api.blockCard(card.barcode)
-      .then((response) => {
+        window.api.blockCard(card.barcode)
+        .then((response) => {
         if (response.error) {
           alert("خطأ: " + response.error);
         } else {
-          alert("✅ تم حظر البطاقة بنجاح!");
-          onClose(); // Close modal after blocking
+          alert("تم حظر البطاقة بنجاح!");
+          onClose();
         }
       })
-      .catch((error) => console.error("❌ Error blocking card:", error));
-  };  
+      .catch((error) => console.error(" Error blocking card:", error));
+  };
+  
 
   
 
@@ -204,7 +205,7 @@ useEffect(() => {
     }
   
     window.api.getTransactionHistory(card.barcode)
-      .then((data) => {
+      .then(data => {
         if (data.error) {
           console.error("Error fetching transaction history:", data.error);
         } else {
@@ -212,8 +213,9 @@ useEffect(() => {
           setShowTransactionHistory(true);
         }
       })
-      .catch((error) => console.error("Error fetching transaction history:", error));
-  };  
+      .catch(error => console.error("Error fetching transaction history:", error));
+  };
+  
 
   
 
@@ -227,15 +229,15 @@ useEffect(() => {
     if (!window.confirm("هل أنت متأكد أنك تريد نقل الأموال إلى البطاقة الجديدة؟")) return;
   
     window.api.transferMoneyToNewCard(card.barcode, newCardBarcode)
-      .then((response) => {
+    .then(response => {
         if (response.error) {
-          alert(" خطأ: " + response.error);
+          alert("خطأ: " + response.error);
         } else {
           alert("تم تحويل الرصيد بنجاح!");
-          onClose(); // Close modal after success
+          onClose();
         }
       })
-      .catch((error) => console.error("Error transferring money:", error));
+      .catch(error => console.error("Error transferring money:", error));    
   };
 
   

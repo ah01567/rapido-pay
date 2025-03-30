@@ -3,6 +3,7 @@ import { FaSearch, FaSyncAlt } from "react-icons/fa";
 import CashierCardSearchModal from "../components/CashierCardSearchModal";
 import { useNavigate } from "react-router-dom";
 import { CiLogout } from "react-icons/ci";
+import API_BASE_URL from "../utils/apiBase";
 
 const CashierPage = () => {
 
@@ -30,7 +31,7 @@ const CashierPage = () => {
     try {
       console.log(`Searching for barcode: ${cleanBarcode}`);
       
-      const response = await fetch(`http://localhost:3001/card/${encodeURIComponent(cleanBarcode)}`);
+      const response = await fetch(`${API_BASE_URL}/card/${encodeURIComponent(cleanBarcode)}`);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -47,7 +48,7 @@ const CashierPage = () => {
       
       // Additional debug - check if server is reachable
       try {
-        const ping = await fetch('http://localhost:3001/healthcheck');
+        const ping = await fetch(`${API_BASE_URL}/healthcheck`);
         console.log("Server healthcheck:", ping.status);
       } catch (e) {
         console.error("Server unreachable:", e);
